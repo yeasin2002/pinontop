@@ -56,5 +56,5 @@ jobs:
           releaseName: 'pinontop v__VERSION__'
           releaseBody: 'Automated release for pinontop v__VERSION__. Download the appropriate installer or standalone binary below.'
           releaseDraft: false
-          prerelease: false
+          prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') }}
           args: ${{ matrix.args }}
