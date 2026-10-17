@@ -1,3 +1,4 @@
+pub mod host;
 pub mod logfile;
 pub mod shortcuts;
 pub mod store;

@@ -21,12 +21,17 @@ impl Level {
     }
 }
 
+/// Returns true if running in developer mode (`PINIT_DEV=1` or debug build).
+pub fn is_dev_mode() -> bool {
+    std::env::var("PINIT_DEV").map(|v| v == "1").unwrap_or(false) || cfg!(debug_assertions)
+}
+
 /// Resolves the application data directory based on `PINIT_DEV` environment variable:
 /// - Normal: `%LOCALAPPDATA%\PinIt`
 /// - Dev: `%LOCALAPPDATA%\PinIt-dev`
 pub fn get_app_data_dir() -> PathBuf {
     let local_app_data = std::env::var("LOCALAPPDATA").unwrap_or_else(|_| ".".to_string());
-    let folder_name = if std::env::var("PINIT_DEV").map(|v| v == "1").unwrap_or(false) {
+    let folder_name = if is_dev_mode() {
         "PinIt-dev"
     } else {
         "PinIt"
