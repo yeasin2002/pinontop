@@ -22,18 +22,18 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 1: Rust Dependencies & Logging Infrastructure
 
 ### 1.1 Cargo Dependencies
-- [ ] Add the pinned `windows` crate (`=0.62.2`) with exact required feature flags to [`src-tauri/Cargo.toml`](file:///d:/programming/personal/pinontop/src-tauri/Cargo.toml):
-  - `Win32_Foundation`, `Win32_Graphics_Dwm`, `Win32_Graphics_Gdi`, `Win32_Media_Audio`, `Win32_System_LibraryLoader`, `Win32_System_Registry`, `Win32_System_Threading`, `Win32_UI_Accessibility`, `Win32_UI_Input_KeyboardAndMouse`, `Win32_UI_Shell`, `Win32_UI_WindowsAndMessaging`
-- [ ] Add `thiserror` (v2.x) to handle structured Rust error definitions.
-- [ ] Verify `cargo check` compiles cleanly on Windows.
+- [x] Add the pinned `windows` crate (`=0.62.2`) with exact required feature flags to [`src-tauri/Cargo.toml`](file:///d:/programming/personal/pinontop/src-tauri/Cargo.toml):
+  - `Win32_Foundation`, `Win32_Graphics_Dwm`, `Win32_Graphics_Gdi`, `Win32_Media_Audio`, `Win32_System_LibraryLoader`, `Win32_System_Registry`, `Win32_System_SystemInformation`, `Win32_System_Threading`, `Win32_UI_Accessibility`, `Win32_UI_Input_KeyboardAndMouse`, `Win32_UI_Shell`, `Win32_UI_WindowsAndMessaging`
+- [x] Add `thiserror` (v2.x) to handle structured Rust error definitions.
+- [x] Verify `cargo check` compiles cleanly on Windows.
 
 ### 1.2 Diagnostic Logging Subsystem (`src-tauri/src/logfile.rs`)
-- [ ] Implement thread-safe file logger writing to `%LOCALAPPDATA%\PinIt\pinit.log` (or `%LOCALAPPDATA%\PinIt-dev\pinit.log` when `PINIT_DEV=1`).
-- [ ] Ensure **Privacy Hard Rule**: Window titles must **NEVER** be written to logs (only process names, HWNDs, and error codes).
-- [ ] Log entry format: `YYYY-MM-DD HH:MM:SS.mmm [I/W] <message>\r\n`.
-- [ ] Size limit rotation: when log exceeds 512KB, atomically rotate to `pinit.log.old`.
-- [ ] Install a global panic hook via `std::panic::set_hook` to log crash details before process termination.
-- [ ] Unit tests: verify log format, rotation logic, and title-exclusion rules.
+- [x] Implement thread-safe file logger writing to `%LOCALAPPDATA%\PinIt\pinit.log` (or `%LOCALAPPDATA%\PinIt-dev\pinit.log` when `PINIT_DEV=1`).
+- [x] Ensure **Privacy Hard Rule**: Window titles must **NEVER** be written to logs (only process names, HWNDs, and error codes).
+- [x] Log entry format: `YYYY-MM-DD HH:MM:SS.mmm [I/W] <message>\r\n`.
+- [x] Size limit rotation: when log exceeds 512KB, atomically rotate to `pinit.log.old`.
+- [x] Install a global panic hook via `std::panic::set_hook` to log crash details before process termination.
+- [x] Unit tests: verify log format, rotation logic, and directory resolution.
 
 ---
 
