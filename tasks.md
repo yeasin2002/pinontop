@@ -40,27 +40,27 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 2: State Persistence & Shortcut Models
 
 ### 2.1 Storage & Schema Compatibility (`src-tauri/src/store.rs`)
-- [ ] Define data directory resolution using `std::env::var("LOCALAPPDATA")` (do **not** use Tauri's `app_data_dir()`).
-- [ ] Implement backward-compatible `pinned.json` serialization:
+- [x] Define data directory resolution using `std::env::var("LOCALAPPDATA")` (do **not** use Tauri's `app_data_dir()`).
+- [x] Implement backward-compatible `pinned.json` serialization:
   - Key format: `"<process_name>:<index>"`.
   - Serde `#[serde(flatten)]` on all structs to preserve unknown legacy fields verbatim.
-- [ ] Atomic save logic: write to `pinned.json.tmp`, then atomically rename over `pinned.json`.
-- [ ] Corrupt file recovery: if JSON is unparseable, rename to `pinned.json.corrupt` and return defaults without crashing.
-- [ ] Opacity lossless integer math:
+- [x] Atomic save logic: write to `pinned.json.tmp`, then atomically rename over `pinned.json`.
+- [x] Corrupt file recovery: if JSON is unparseable, rename to `pinned.json.corrupt` and return defaults without crashing.
+- [x] Opacity lossless integer math:
   - Percent to Alpha: `alpha = (percent * 255 + 50) / 100`
   - Alpha to Percent: `percent = (alpha * 100 + 127) / 255`
-- [ ] Unit tests: round-trip serialization, legacy compatibility fixtures, and corrupt file handling.
+- [x] Unit tests: round-trip serialization, legacy compatibility fixtures, and corrupt file handling.
 
 ### 2.2 Shortcut Parser & Validator (`src-tauri/src/shortcuts.rs`)
-- [ ] Implement parser for string tokens (e.g., `"super+ctrl+KeyT"`).
-- [ ] Map tokens to Win32 Virtual Key codes (`VK_*`) and modifier flags (`MOD_WIN`, `MOD_CONTROL`, `MOD_ALT`, `MOD_SHIFT`).
-- [ ] Enforce the Safe Modifier Rule: reject shortcuts that lack at least one of Win, Ctrl, or Alt.
-- [ ] Provide factory defaults:
+- [x] Implement parser for string tokens (e.g., `"super+ctrl+KeyT"`).
+- [x] Map tokens to Win32 Virtual Key codes (`VK_*`) and modifier flags (`MOD_WIN`, `MOD_CONTROL`, `MOD_ALT`, `MOD_SHIFT`).
+- [x] Enforce the Safe Modifier Rule: reject shortcuts that lack at least one of Win, Ctrl, or Alt.
+- [x] Provide factory defaults:
   - `toggle_pin`: `"super+ctrl+KeyT"`
   - `opacity_up`: `"super+ctrl+Equal"`
   - `opacity_down`: `"super+ctrl+Minus"`
   - `toggle_window`: `"super+ctrl+KeyP"`
-- [ ] Unit tests: test modifier validation, key code mapping, and string rebuilds.
+- [x] Unit tests: test modifier validation, key code mapping, and string rebuilds.
 
 ---
 
