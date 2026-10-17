@@ -120,32 +120,32 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 5: Visual Flash Overlay & Autostart
 
 ### 5.1 Flash Window Overlay (`src-tauri/src/flash.rs`)
-- [ ] Create a borderless layered top-most Win32 window (`WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW`).
-- [ ] Position accurately using `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)` to avoid invisible Windows 10/11 drop-shadow margins.
-- [ ] Draw high-contrast monochrome outline (solid white/black accent border).
-- [ ] Implement smooth 300ms quadratic ease-out fade animation.
-- [ ] Respect Windows accessibility setting: check `SPI_GETCLIENTAREAANIMATION` and skip animation if disabled.
+- [x] Create a borderless layered top-most Win32 window (`WS_EX_LAYERED | WS_EX_TRANSPARENT | WS_EX_TOOLWINDOW`).
+- [x] Position accurately using `DwmGetWindowAttribute(DWMWA_EXTENDED_FRAME_BOUNDS)` to avoid invisible Windows 10/11 drop-shadow margins.
+- [x] Draw high-contrast monochrome outline (solid white/black accent border).
+- [x] Implement smooth 300ms quadratic ease-out fade animation.
+- [x] Respect Windows accessibility setting: check `SPI_GETCLIENTAREAANIMATION` and skip animation if disabled.
 
 ### 5.2 Windows Registry Autostart (`src-tauri/src/autostart.rs`)
-- [ ] Manage `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
-- [ ] Key name: `PinIt` (or `PinIt-dev`).
-- [ ] Command value: `"<path_to_pinontop.exe>" --minimized`.
-- [ ] Path self-repair: update registry path if executable has been relocated.
-- [ ] Do **not** use Tauri's autostart plugin (maintains backward compatibility).
+- [x] Manage `HKCU\Software\Microsoft\Windows\CurrentVersion\Run`.
+- [x] Key name: `PinIt` (or `PinIt-dev`).
+- [x] Command value: `"<path_to_pinontop.exe>" --minimized`.
+- [x] Path self-repair: update registry path if executable has been relocated.
+- [x] Do **not** use Tauri's autostart plugin (maintains backward compatibility).
 
 ---
 
 ## Phase 6: System Tray & Window Lifecycle
 
 ### 6.1 Tray Icon & Context Menu
-- [ ] Create tray icon with `app-icon.png` / `icon.ico`.
-- [ ] Context menu actions:
+- [x] Create tray icon with `app-icon.png` / `icon.ico`.
+- [x] Context menu actions:
   - Dynamic list of currently pinned windows (click to unpin)
   - "Pin a window..." (opens Window Picker)
   - "Show pinontop" / "Hide pinontop"
   - "Settings"
   - "Quit"
-- [ ] Minimize to tray on close button click:
+- [x] Minimize to tray on close button click:
   - Intercept window close event and hide window instead of exiting.
   - Show balloon notice on first-time hide ("pinontop is running in the system tray").
 
@@ -154,22 +154,22 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 7: Pin Bookkeeping Engine (`src-tauri/src/pins.rs`)
 
 ### 7.1 Pin Manager Architecture
-- [ ] Manage synchronized thread-safe state:
+- [x] Manage synchronized thread-safe state:
   - `live_pins`: active windows with verified HWNDs.
   - `pending_pins`: saved pins whose process is not currently running.
-- [ ] Topmost re-enforcement loop:
+- [x] Topmost re-enforcement loop:
   - Run background interval (every 1.5 seconds) checking `WS_EX_TOPMOST` on all live pins.
   - Re-apply `HWND_TOPMOST` if another fullscreen/greedy app displaced it.
-- [ ] Process watcher / pending pin resolution:
+- [x] Process watcher / pending pin resolution:
   - When new windows open, match against pending pins by `process_name` and restore pin status automatically.
-- [ ] Emit Tauri event `pins-changed` whenever the list updates.
+- [x] Emit Tauri event `pins-changed` whenever the list updates.
 
 ---
 
 ## Phase 8: Tauri IPC Commands & Capabilities
 
 ### 8.1 Command Bridge (`src-tauri/src/commands.rs`)
-- [ ] Implement all 13 spec commands:
+- [x] Implement all 13 spec commands:
   1. `get_state()` -> Returns full `AppState` (pins + settings)
   2. `toggle_pin(hwnd)` -> Pins or unpins foreign window
   3. `set_opacity(hwnd, percent)` -> Debounced opacity adjustment
@@ -183,10 +183,10 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
   11. `get_autostart()` -> Reads HKCU registry Run key
   12. `row_hovered(hwnd, hovered)` -> Triggers flash overlay on target window
   13. `open_url(url)` -> Opens link in default browser
-- [ ] Register all commands in `tauri::generate_handler![]` in [`src-tauri/src/lib.rs`](file:///d:/programming/personal/pinontop/src-tauri/src/lib.rs).
+- [x] Register all commands in `tauri::generate_handler![]` in [`src-tauri/src/lib.rs`](file:///d:/programming/personal/pinontop/src-tauri/src/lib.rs).
 
 ### 8.2 Tauri Capabilities Configuration (`src-tauri/capabilities/default.json`)
-- [ ] Add required Tauri window and event permissions:
+- [x] Add required Tauri window and event permissions:
   - `core:window:allow-show`, `core:window:allow-hide`, `core:window:allow-close`, `core:window:allow-set-focus`
   - `core:event:allow-listen`, `core:event:allow-emit`
   - `opener:default` / `shell:allow-open`

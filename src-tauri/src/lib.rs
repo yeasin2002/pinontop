@@ -1,10 +1,15 @@
+pub mod autostart;
+pub mod commands;
+pub mod flash;
 pub mod host;
 pub mod logfile;
+pub mod pins;
 pub mod shortcuts;
 pub mod store;
+pub mod tray;
 pub mod win;
 
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 #[tauri::command]
@@ -43,6 +48,14 @@ pub fn run() {
                 }
             }
 
+            #[cfg(desktop)]
+            {
+                if let Err(e) = tray::setup_tray(app.handle()) {
+                    log_warn!("Failed to initialize system tray: {}", e);
+                }
+                pins::init_pin_manager(app.handle().clone());
+            }
+
             if let Some(window) = app.get_webview_window("main") {
                 if let Some(icon) = app.default_window_icon() {
                     let _ = window.set_icon(icon.clone());
@@ -56,10 +69,29 @@ pub fn run() {
                 if !host::is_session_ending() {
                     api.prevent_close();
                     let _ = window.hide();
+                    if tray::check_first_time_tray_notice() {
+                        let _ = window.emit("toast", "pinontop is running in the system tray");
+                    }
                 }
             }
         })
-        .invoke_handler(tauri::generate_handler![greet])
+        .invoke_handler(tauri::generate_handler![
+            greet,
+            commands::get_state,
+            commands::toggle_pin,
+            commands::unpin,
+            commands::set_opacity,
+            commands::set_click_through,
+            commands::unpin_all,
+            commands::forget_pending,
+            commands::get_windows,
+            commands::save_shortcuts,
+            commands::save_settings,
+            commands::set_autostart,
+            commands::get_autostart,
+            commands::row_hovered,
+            commands::open_url,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 
