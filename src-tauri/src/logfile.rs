@@ -21,9 +21,9 @@ impl Level {
     }
 }
 
-/// Returns true if running in developer mode (`PINIT_DEV=1` or debug build).
+/// Returns true if running in developer mode (`PINIT_DEV=1`).
 pub fn is_dev_mode() -> bool {
-    std::env::var("PINIT_DEV").map(|v| v == "1").unwrap_or(false) || cfg!(debug_assertions)
+    std::env::var("PINIT_DEV").map(|v| v == "1").unwrap_or(false)
 }
 
 /// Resolves the application data directory based on `PINIT_DEV` environment variable:

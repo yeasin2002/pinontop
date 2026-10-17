@@ -94,26 +94,26 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 4: Helper Window, Hotkeys, Single Instance & Session End
 
 ### 4.1 Single-Instance Enforcement (`src-tauri/src/main.rs`)
-- [ ] Create named Win32 mutex `PinIt_SingleInstance_v2` (or `PinIt_SingleInstance_v2-dev` in dev mode).
-- [ ] If `GetLastError() == ERROR_ALREADY_EXISTS`:
+- [x] Create named Win32 mutex `PinIt_SingleInstance_v2` (or `PinIt_SingleInstance_v2-dev` in dev mode).
+- [x] If `GetLastError() == ERROR_ALREADY_EXISTS`:
   - Find existing window via `FindWindowW("PinItHost", ...)`.
   - Post custom message to bring existing window to foreground.
   - Terminate current instance immediately.
 
 ### 4.2 Raw Win32 Helper Window (`src-tauri/src/host.rs`)
-- [ ] Register window class `PinItHost` (regular top-level window, **not** `HWND_MESSAGE`, to receive session broadcast events).
-- [ ] Embed helper window in the message loop to receive Windows messages without extra threads.
-- [ ] Register global hotkeys using Win32 `RegisterHotKey`:
+- [x] Register window class `PinItHost` (regular top-level window, **not** `HWND_MESSAGE`, to receive session broadcast events).
+- [x] Embed helper window in the message loop to receive Windows messages without extra threads.
+- [x] Register global hotkeys using Win32 `RegisterHotKey`:
   - Ensure opacity hotkeys support auto-repeat.
   - Catch registration collisions and emit `shortcut-conflicts` event to frontend.
 
 ### 4.3 Session End vs Manual Quit (`src-tauri/src/host.rs`)
-- [ ] Handle `WM_QUERYENDSESSION`: return `TRUE` and set `is_session_ending = true`.
-- [ ] Handle `WM_ENDSESSION`:
+- [x] Handle `WM_QUERYENDSESSION`: return `TRUE` and set `is_session_ending = true`.
+- [x] Handle `WM_ENDSESSION`:
   - If `wParam != 0`: save pins to disk for reboot survival, release visual topmost styles, return immediately.
-- [ ] Handle manual quit: clear pins from `pinned.json` on user-initiated exit so app starts fresh next launch.
-- [ ] Handle `WM_SETTINGCHANGE` (`"ImmersiveColorSet"`): notify frontend of Windows theme change.
-- [ ] Handle `TaskbarCreated`: re-create system tray icon if Windows Explorer restarts.
+- [x] Handle manual quit: clear pins from `pinned.json` on user-initiated exit so app starts fresh next launch.
+- [x] Handle `WM_SETTINGCHANGE` (`"ImmersiveColorSet"`): notify frontend of Windows theme change.
+- [x] Handle `TaskbarCreated`: re-create system tray icon if Windows Explorer restarts.
 
 ---
 

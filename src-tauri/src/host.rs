@@ -4,14 +4,14 @@ use tauri::{AppHandle, Emitter, Manager};
 use thiserror::Error;
 
 use crate::logfile::{write_entry, Level};
-use crate::shortcuts::{self, ParsedShortcut, HOTKEY_OPACITY_DOWN, HOTKEY_OPACITY_UP, HOTKEY_PIN, HOTKEY_WINDOW};
+use crate::shortcuts::{self, HOTKEY_OPACITY_DOWN, HOTKEY_OPACITY_UP, HOTKEY_PIN, HOTKEY_WINDOW};
 use crate::store::SavedShortcuts;
 
 #[cfg(windows)]
 use windows::core::PCWSTR;
 #[cfg(windows)]
 use windows::Win32::Foundation::{
-    CloseHandle, BOOL, ERROR_ALREADY_EXISTS, GetLastError, HANDLE, HWND, LPARAM, LRESULT, WPARAM,
+    CloseHandle, ERROR_ALREADY_EXISTS, GetLastError, HINSTANCE, HWND, LPARAM, LRESULT, WPARAM,
 };
 #[cfg(windows)]
 use windows::Win32::Graphics::Gdi::HBRUSH;
@@ -156,7 +156,7 @@ pub fn check_single_instance() -> SingleInstanceStatus {
         if let Ok(handle) = res {
             if last_err == ERROR_ALREADY_EXISTS {
                 // Another instance is already running
-                let existing_window = FindWindowW(PCWSTR(class_name_w.as_ptr()), None);
+                let existing_window = FindWindowW(PCWSTR(class_name_w.as_ptr()), PCWSTR::null());
                 if let Ok(hwnd) = existing_window {
                     if !hwnd.0.is_null() {
                         let mut pid = 0u32;
@@ -164,7 +164,7 @@ pub fn check_single_instance() -> SingleInstanceStatus {
                         if pid != 0 {
                             let _ = AllowSetForegroundWindow(pid);
                         }
-                        let _ = PostMessageW(hwnd, WM_APP_SHOW, WPARAM(0), LPARAM(0));
+                        let _ = PostMessageW(Some(hwnd), WM_APP_SHOW, WPARAM(0), LPARAM(0));
                         let _ = CloseHandle(handle);
                         return SingleInstanceStatus::AlreadyRunning;
                     }
@@ -233,18 +233,11 @@ pub fn perform_manual_quit() {
     write_entry(Level::Info, "Performing user-initiated manual quit");
 
     // 1. Release active pins visually and clear pinned.json
-    let mut state = crate::store::load_state();
+    let mut state = crate::store::load();
     let num_pins = state.pins.len();
 
-    // Release visually
-    for (key, pin) in &state.pins {
-        let _ = key;
-        let _ = pin;
-        // Visual unpin restoration is managed via commands/pins layer
-    }
-
     state.pins.clear();
-    let _ = crate::store::save_state_to_disk(&state);
+    let _ = crate::store::save(&state);
 
     write_entry(
         Level::Info,
@@ -267,72 +260,74 @@ unsafe extern "system" fn helper_wndproc(
     wparam: WPARAM,
     lparam: LPARAM,
 ) -> LRESULT {
-    let taskbar_msg = TASKBAR_CREATED_MSG.load(Ordering::SeqCst);
+    unsafe {
+        let taskbar_msg = TASKBAR_CREATED_MSG.load(Ordering::SeqCst);
 
-    if taskbar_msg != 0 && msg == taskbar_msg {
-        write_entry(Level::Info, "Received TaskbarCreated message: Explorer restarted");
-        if let Ok(lock) = TASKBAR_CREATED_HANDLER.read() {
-            if let Some(ref handler) = *lock {
-                handler();
+        if taskbar_msg != 0 && msg == taskbar_msg {
+            write_entry(Level::Info, "Received TaskbarCreated message: Explorer restarted");
+            if let Ok(lock) = TASKBAR_CREATED_HANDLER.read() {
+                if let Some(ref handler) = *lock {
+                    handler();
+                }
             }
+            return LRESULT(0);
         }
-        return LRESULT(0);
-    }
 
-    match msg {
-        WM_QUERYENDSESSION => {
-            set_session_ending(true);
-            write_entry(Level::Info, "Received WM_QUERYENDSESSION: flagging session ending");
-            LRESULT(1) // Return TRUE to indicate willingness to end session
-        }
-        WM_ENDSESSION => {
-            if wparam.0 != 0 {
-                write_entry(
-                    Level::Info,
-                    "Received WM_ENDSESSION (true): saving pins for reboot and releasing visual topmost",
-                );
-                if let Ok(lock) = SESSION_END_HANDLER.read() {
-                    if let Some(ref handler) = *lock {
-                        handler();
+        match msg {
+            WM_QUERYENDSESSION => {
+                set_session_ending(true);
+                write_entry(Level::Info, "Received WM_QUERYENDSESSION: flagging session ending");
+                LRESULT(1) // Return TRUE to indicate willingness to end session
+            }
+            WM_ENDSESSION => {
+                if wparam.0 != 0 {
+                    write_entry(
+                        Level::Info,
+                        "Received WM_ENDSESSION (true): saving pins for reboot and releasing visual topmost",
+                    );
+                    if let Ok(lock) = SESSION_END_HANDLER.read() {
+                        if let Some(ref handler) = *lock {
+                            handler();
+                        }
+                    }
+                    LRESULT(0)
+                } else {
+                    set_session_ending(false);
+                    write_entry(
+                        Level::Info,
+                        "Received WM_ENDSESSION (false): session shutdown was cancelled",
+                    );
+                    LRESULT(0)
+                }
+            }
+            WM_HOTKEY => {
+                let hotkey_id = wparam.0 as i32;
+                if hotkey_id == HOTKEY_WINDOW {
+                    toggle_main_window();
+                } else if let Ok(lock) = HOTKEY_DISPATCHER.read() {
+                    if let Some(ref dispatcher) = *lock {
+                        dispatcher(hotkey_id);
                     }
                 }
                 LRESULT(0)
-            } else {
-                set_session_ending(false);
-                write_entry(
-                    Level::Info,
-                    "Received WM_ENDSESSION (false): session shutdown was cancelled",
-                );
+            }
+            WM_APP_SHOW => {
+                write_entry(Level::Info, "Received WM_APP_SHOW: activating main window");
+                show_main_window();
                 LRESULT(0)
             }
-        }
-        WM_HOTKEY => {
-            let hotkey_id = wparam.0 as i32;
-            if hotkey_id == HOTKEY_WINDOW {
-                toggle_main_window();
-            } else if let Ok(lock) = HOTKEY_DISPATCHER.read() {
-                if let Some(ref dispatcher) = *lock {
-                    dispatcher(hotkey_id);
+            WM_SETTINGCHANGE => {
+                if let Some(app) = get_app_handle() {
+                    let _ = app.emit("theme-changed", ());
                 }
+                DefWindowProcW(hwnd, msg, wparam, lparam)
             }
-            LRESULT(0)
-        }
-        WM_APP_SHOW => {
-            write_entry(Level::Info, "Received WM_APP_SHOW: activating main window");
-            show_main_window();
-            LRESULT(0)
-        }
-        WM_SETTINGCHANGE => {
-            if let Some(app) = get_app_handle() {
-                let _ = app.emit("theme-changed", ());
+            WM_DESTROY => {
+                HELPER_HWND.store(0, Ordering::SeqCst);
+                LRESULT(0)
             }
-            DefWindowProcW(hwnd, msg, wparam, lparam)
+            _ => DefWindowProcW(hwnd, msg, wparam, lparam),
         }
-        WM_DESTROY => {
-            HELPER_HWND.store(0, Ordering::SeqCst);
-            LRESULT(0)
-        }
-        _ => DefWindowProcW(hwnd, msg, wparam, lparam),
     }
 }
 
@@ -387,7 +382,7 @@ pub fn init_helper_window() -> Result<isize, HostError> {
             0,
             None,
             None,
-            hinstance,
+            Some(HINSTANCE(hinstance.0)),
             None,
         );
 
@@ -548,5 +543,13 @@ mod tests {
 
         set_session_ending(false);
         assert!(!is_session_ending());
+    }
+
+    #[test]
+    fn test_register_hotkeys_empty_hwnd() {
+        let shortcuts = SavedShortcuts::default();
+        let conflicts = register_all_hotkeys(0, &shortcuts);
+        // On HWND 0, RegisterHotKey will fail and report conflicts or succeed if handled gracefully
+        assert!(!conflicts.is_empty() || cfg!(not(windows)));
     }
 }
