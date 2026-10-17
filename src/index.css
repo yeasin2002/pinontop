@@ -1,0 +1,142 @@
+@import url('https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600;700&family=Geist:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@500;600;700;800&display=swap');
+
+:root {
+  --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-sans: 'Geist', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  --font-mono: 'Geist Mono', 'Cascadia Code', Consolas, monospace;
+
+  /* Solid Monochrome Engineering Tokens - Light Mode */
+  --bg-canvas: #ffffff;
+  --fg-default: #000000;
+  --surface-card: #ffffff;
+  --surface-subtle: #f4f4f5;
+  --surface-muted: #e4e4e7;
+  --border-subtle: #e4e4e7;
+  --border-default: #d4d4d8;
+  --border-strong: #000000;
+  --text-primary: #000000;
+  --text-muted: #71717a;
+  --text-subtle: #a1a1aa;
+  --primary-btn-bg: #000000;
+  --primary-btn-fg: #ffffff;
+  --primary-btn-hover: #27272a;
+  --key-badge-bg: #f4f4f5;
+  --key-badge-border: #e4e4e7;
+  --key-badge-text: #000000;
+}
+
+.dark {
+  /* Solid Monochrome Engineering Tokens - Dark Mode */
+  --bg-canvas: #09090b;
+  --fg-default: #ffffff;
+  --surface-card: #121215;
+  --surface-subtle: #18181b;
+  --surface-muted: #27272a;
+  --border-subtle: #27272a;
+  --border-default: #3f3f46;
+  --border-strong: #ffffff;
+  --text-primary: #ffffff;
+  --text-muted: #a1a1aa;
+  --text-subtle: #71717a;
+  --primary-btn-bg: #ffffff;
+  --primary-btn-fg: #000000;
+  --primary-btn-hover: #e4e4e7;
+  --key-badge-bg: #18181b;
+  --key-badge-border: #27272a;
+  --key-badge-text: #ffffff;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body, #root {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  background-color: var(--bg-canvas);
+  color: var(--fg-default);
+  overflow-x: hidden;
+}
+
+body {
+  font-family: var(--font-sans);
+  background-color: var(--bg-canvas);
+  color: var(--fg-default);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  user-select: none;
+  transition: background-color 0.15s ease, color 0.15s ease;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+body::-webkit-scrollbar {
+  display: none;
+}
+
+/* Custom Scrollbar */
+.custom-scrollbar::-webkit-scrollbar {
+  width: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-track {
+  background: transparent;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background: var(--surface-muted);
+  border-radius: 4px;
+}
+.custom-scrollbar::-webkit-scrollbar-thumb:hover {
+  background: var(--text-subtle);
+}
+
+/* Sheet Overlay and Sliding Animation */
+.sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+  z-index: 40;
+  display: flex;
+  align-items: flex-end;
+  animation: fadeIn 0.15s ease-out;
+}
+
+.sheet-container {
+  width: 100%;
+  background-color: var(--bg-canvas);
+  border-top: 1px solid var(--border-default);
+  border-top-left-radius: 8px;
+  border-top-right-radius: 8px;
+  padding: 16px;
+  animation: slideUp 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.12);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
+}
+
+@keyframes slideUpToast {
+  from {
+    opacity: 0;
+    transform: translate(-50%, 8px);
+  }
+  to {
+    opacity: 1;
+    transform: translate(-50%, 0);
+  }
+}
+
+.animate-slide-up {
+  animation: slideUpToast 0.2s ease-out;
+}

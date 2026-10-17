@@ -12,9 +12,11 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "pinontop",
-        "width": 800,
-        "height": 600
+        "width": 380,
+        "height": 600,
+        "resizable": false
       }
     ],
     "security": {
