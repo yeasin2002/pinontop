@@ -69,22 +69,22 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 *Strict Architecture Rule: ALL `unsafe` Win32 calls must reside strictly within `win.rs`.*
 
 ### 3.1 Window Manipulation
-- [ ] Pin window: call `SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)`.
-- [ ] Unpin window: call `SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)`.
-- [ ] UIPI Detection: verify `GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST`. If not set, report privilege isolation block (target app running as Administrator).
-- [ ] Opacity control:
+- [x] Pin window: call `SetWindowPos(hwnd, HWND_TOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)`.
+- [x] Unpin window: call `SetWindowPos(hwnd, HWND_NOTOPMOST, 0, 0, 0, 0, SWP_NOMOVE | SWP_NOSIZE | SWP_NOACTIVATE)`.
+- [x] UIPI Detection: verify `GetWindowLongW(hwnd, GWL_EXSTYLE) & WS_EX_TOPMOST`. If not set, report privilege isolation block (target app running as Administrator).
+- [x] Opacity control:
   - Add `WS_EX_LAYERED` style via `SetWindowLongW`.
   - Apply alpha via `SetLayeredWindowAttributes(hwnd, 0, alpha, LWA_ALPHA)`.
   - Remove layered flag on unpin if window was not layered initially.
-- [ ] Click-through toggle: toggle `WS_EX_TRANSPARENT` style on layered windows.
+- [x] Click-through toggle: toggle `WS_EX_TRANSPARENT` style on layered windows.
 
 ### 3.2 Shell Blacklist & Window Enumeration
-- [ ] Blacklist detector: identify and reject shell windows:
+- [x] Blacklist detector: identify and reject shell windows:
   - Desktop (`Progman`, `WorkerW`)
   - Taskbar (`Shell_TrayWnd`, `Shell_SecondaryTrayWnd`)
   - Start menu and notification center
   - pinontop's own window handles
-- [ ] Implement `get_pinnable_windows()` using `EnumWindows`:
+- [x] Implement `get_pinnable_windows()` using `EnumWindows`:
   - Filter out invisible, zero-size, minimized, or cloaked windows (`DwmGetWindowAttribute` with `DWMWA_CLOAKED`).
   - Extract process name via `GetWindowThreadProcessId` + `QueryFullProcessImageNameW`.
   - Extract window title via `GetWindowTextW`.

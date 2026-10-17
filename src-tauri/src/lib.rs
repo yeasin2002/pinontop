@@ -1,6 +1,7 @@
 pub mod logfile;
 pub mod shortcuts;
 pub mod store;
+pub mod win;
 
 use tauri::Manager;
 
