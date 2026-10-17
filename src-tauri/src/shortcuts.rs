@@ -93,22 +93,18 @@ pub fn key_token_to_vk(token: &str) -> Option<u32> {
     }
 
     // Function keys F1 - F24
-    if token.starts_with('F') {
-        if let Ok(num) = token[1..].parse::<u32>() {
-            if (1..=24).contains(&num) {
+    if token.starts_with('F')
+        && let Ok(num) = token[1..].parse::<u32>()
+            && (1..=24).contains(&num) {
                 return Some(VK_F1 + (num - 1));
             }
-        }
-    }
 
     // Numpad 0-9
-    if token.starts_with("Numpad") && token.len() == 7 {
-        if let Ok(num) = token[6..].parse::<u32>() {
-            if num <= 9 {
+    if token.starts_with("Numpad") && token.len() == 7
+        && let Ok(num) = token[6..].parse::<u32>()
+            && num <= 9 {
                 return Some(VK_NUMPAD0 + num);
             }
-        }
-    }
 
     match token {
         "Equal" => Some(VK_OEM_PLUS),

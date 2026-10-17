@@ -206,12 +206,12 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 10: Quality Assurance & Build Verification
 
 ### 10.1 Unit & Integration Testing
-- [ ] Run backend unit tests: `cargo test --manifest-path src-tauri/Cargo.toml`.
-- [ ] Verify `pinned.json` round-trip with Qt and Slint legacy test fixtures.
-- [ ] Test UIPI privilege handling (verify clear toast error when attempting to pin an Admin window from standard user mode).
-- [ ] Test Windows reboot survival vs clean manual exit.
+- [x] Run backend unit tests: `cargo test --manifest-path src-tauri/Cargo.toml`.
+- [x] Verify `pinned.json` round-trip with Qt and Slint legacy test fixtures.
+- [x] Test UIPI privilege handling (verify clear toast error when attempting to pin an Admin window from standard user mode).
+- [x] Test Windows reboot survival vs clean manual exit.
 
 ### 10.2 Production Packaging
-- [ ] Run release build: `pnpm tauri build`.
-- [ ] Verify standalone executable `src-tauri/target/release/pinontop.exe` size (< 5MB target).
-- [ ] Verify clean install and uninstall behavior via NSIS installer.
+- [x] Run release build: `pnpm tauri build`.
+- [x] Verify standalone executable `src-tauri/target/release/pinontop.exe` size (< 5MB target).
+- [x] Verify clean install and uninstall behavior via NSIS installer.

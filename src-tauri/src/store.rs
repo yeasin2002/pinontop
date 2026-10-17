@@ -139,6 +139,7 @@ impl Default for SavedSettings {
 
 /// Top-level representation of `pinned.json`.
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Default)]
 pub struct ConfigFile {
     #[serde(default)]
     pub pins: HashMap<String, SavedPin>,
@@ -149,15 +150,6 @@ pub struct ConfigFile {
     pub extra: HashMap<String, serde_json::Value>,
 }
 
-impl Default for ConfigFile {
-    fn default() -> Self {
-        Self {
-            pins: HashMap::new(),
-            settings: SavedSettings::default(),
-            extra: HashMap::new(),
-        }
-    }
-}
 
 /// Full application persisted state ready for consumption by pins/commands layer.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
@@ -251,11 +243,10 @@ pub fn load() -> AppStateStore {
 /// Saves application state atomically to the specified path:
 /// writes to `<path>.tmp` and renames over `<path>`.
 pub fn save_to_path(path: &Path, state: &AppStateStore) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        if !parent.exists() {
+    if let Some(parent) = path.parent()
+        && !parent.exists() {
             fs::create_dir_all(parent).map_err(|e| e.to_string())?;
         }
-    }
 
     // Convert ordered pin vector back into `<process_name>:<i>` map
     let mut pins_map = HashMap::new();

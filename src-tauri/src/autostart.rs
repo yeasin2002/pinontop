@@ -150,11 +150,10 @@ pub fn set_autostart(enabled: bool) -> Result<(), AutostartError> {
 /// `"C:\Path\To\pinontop.exe" --minimized`
 pub fn extract_exe_path(command: &str) -> String {
     let trimmed = command.trim();
-    if let Some(stripped) = trimmed.strip_prefix('"') {
-        if let Some(end_quote) = stripped.find('"') {
+    if let Some(stripped) = trimmed.strip_prefix('"')
+        && let Some(end_quote) = stripped.find('"') {
             return stripped[..end_quote].to_string();
         }
-    }
 
     // Unquoted fallback: split by space
     trimmed

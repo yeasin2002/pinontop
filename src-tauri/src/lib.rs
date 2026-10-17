@@ -56,11 +56,10 @@ pub fn run() {
                 pins::init_pin_manager(app.handle().clone());
             }
 
-            if let Some(window) = app.get_webview_window("main") {
-                if let Some(icon) = app.default_window_icon() {
+            if let Some(window) = app.get_webview_window("main")
+                && let Some(icon) = app.default_window_icon() {
                     let _ = window.set_icon(icon.clone());
                 }
-            }
             Ok(())
         })
         .on_window_event(|window, event| {

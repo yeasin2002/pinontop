@@ -157,8 +157,8 @@ pub fn check_single_instance() -> SingleInstanceStatus {
             if last_err == ERROR_ALREADY_EXISTS {
                 // Another instance is already running
                 let existing_window = FindWindowW(PCWSTR(class_name_w.as_ptr()), PCWSTR::null());
-                if let Ok(hwnd) = existing_window {
-                    if !hwnd.0.is_null() {
+                if let Ok(hwnd) = existing_window
+                    && !hwnd.0.is_null() {
                         let mut pid = 0u32;
                         GetWindowThreadProcessId(hwnd, Some(&mut pid));
                         if pid != 0 {
@@ -168,7 +168,6 @@ pub fn check_single_instance() -> SingleInstanceStatus {
                         let _ = CloseHandle(handle);
                         return SingleInstanceStatus::AlreadyRunning;
                     }
-                }
 
                 // If FindWindowW returned null, previous instance crashed without cleaning mutex
                 write_entry(
@@ -178,19 +177,19 @@ pub fn check_single_instance() -> SingleInstanceStatus {
                 if let Ok(mut lock) = MUTEX_HANDLE.write() {
                     *lock = Some(handle.0 as usize);
                 }
-                return SingleInstanceStatus::Acquired;
+                SingleInstanceStatus::Acquired
             } else {
                 if let Ok(mut lock) = MUTEX_HANDLE.write() {
                     *lock = Some(handle.0 as usize);
                 }
-                return SingleInstanceStatus::Acquired;
+                SingleInstanceStatus::Acquired
             }
         } else {
             write_entry(
                 Level::Warning,
                 &format!("CreateMutexW failed: {:?}; continuing as first instance", res.err()),
             );
-            return SingleInstanceStatus::Acquired;
+            SingleInstanceStatus::Acquired
         }
     }
 
@@ -200,19 +199,18 @@ pub fn check_single_instance() -> SingleInstanceStatus {
 
 /// Helper to show and focus the main window.
 pub fn show_main_window() {
-    if let Some(app) = get_app_handle() {
-        if let Some(window) = app.get_webview_window("main") {
+    if let Some(app) = get_app_handle()
+        && let Some(window) = app.get_webview_window("main") {
             let _ = window.show();
             let _ = window.unminimize();
             let _ = window.set_focus();
         }
-    }
 }
 
 /// Helper to toggle visibility of the main window.
 pub fn toggle_main_window() {
-    if let Some(app) = get_app_handle() {
-        if let Some(window) = app.get_webview_window("main") {
+    if let Some(app) = get_app_handle()
+        && let Some(window) = app.get_webview_window("main") {
             let is_visible = window.is_visible().unwrap_or(false);
             if is_visible {
                 let _ = window.hide();
@@ -222,7 +220,6 @@ pub fn toggle_main_window() {
                 let _ = window.set_focus();
             }
         }
-    }
 }
 
 /// Performs a user-initiated manual quit:
@@ -265,11 +262,10 @@ unsafe extern "system" fn helper_wndproc(
 
         if taskbar_msg != 0 && msg == taskbar_msg {
             write_entry(Level::Info, "Received TaskbarCreated message: Explorer restarted");
-            if let Ok(lock) = TASKBAR_CREATED_HANDLER.read() {
-                if let Some(ref handler) = *lock {
+            if let Ok(lock) = TASKBAR_CREATED_HANDLER.read()
+                && let Some(ref handler) = *lock {
                     handler();
                 }
-            }
             return LRESULT(0);
         }
 
@@ -285,11 +281,10 @@ unsafe extern "system" fn helper_wndproc(
                         Level::Info,
                         "Received WM_ENDSESSION (true): saving pins for reboot and releasing visual topmost",
                     );
-                    if let Ok(lock) = SESSION_END_HANDLER.read() {
-                        if let Some(ref handler) = *lock {
+                    if let Ok(lock) = SESSION_END_HANDLER.read()
+                        && let Some(ref handler) = *lock {
                             handler();
                         }
-                    }
                     LRESULT(0)
                 } else {
                     set_session_ending(false);
@@ -304,11 +299,10 @@ unsafe extern "system" fn helper_wndproc(
                 let hotkey_id = wparam.0 as i32;
                 if hotkey_id == HOTKEY_WINDOW {
                     toggle_main_window();
-                } else if let Ok(lock) = HOTKEY_DISPATCHER.read() {
-                    if let Some(ref dispatcher) = *lock {
+                } else if let Ok(lock) = HOTKEY_DISPATCHER.read()
+                    && let Some(ref dispatcher) = *lock {
                         dispatcher(hotkey_id);
                     }
-                }
                 LRESULT(0)
             }
             WM_APP_SHOW => {

@@ -99,8 +99,8 @@ pub fn write_entry(level: Level, message: &str) {
     }
 
     // Check size limit and rotate if needed
-    if let Ok(metadata) = fs::metadata(&log_path) {
-        if metadata.len() >= MAX_LOG_SIZE_BYTES {
+    if let Ok(metadata) = fs::metadata(&log_path)
+        && metadata.len() >= MAX_LOG_SIZE_BYTES {
             let old_path = get_old_log_path();
             let _ = fs::rename(&log_path, &old_path);
 
@@ -112,7 +112,6 @@ pub fn write_entry(level: Level, message: &str) {
                 let _ = file.flush();
             }
         }
-    }
 }
 
 /// Convenience macro for info-level log messages.

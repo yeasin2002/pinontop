@@ -359,20 +359,18 @@ pub fn init_pin_manager(app: AppHandle) {
                 }
             }
             HOTKEY_OPACITY_UP => {
-                if let Some(hwnd) = fg {
-                    if let Some(pin) = mgr.live_pins.iter().find(|p| p.hwnd == hwnd) {
+                if let Some(hwnd) = fg
+                    && let Some(pin) = mgr.live_pins.iter().find(|p| p.hwnd == hwnd) {
                         let next = (pin.opacity + 10).min(100);
                         let _ = mgr.set_opacity(hwnd, next);
                     }
-                }
             }
             HOTKEY_OPACITY_DOWN => {
-                if let Some(hwnd) = fg {
-                    if let Some(pin) = mgr.live_pins.iter().find(|p| p.hwnd == hwnd) {
+                if let Some(hwnd) = fg
+                    && let Some(pin) = mgr.live_pins.iter().find(|p| p.hwnd == hwnd) {
                         let next = pin.opacity.saturating_sub(10).max(20);
                         let _ = mgr.set_opacity(hwnd, next);
                     }
-                }
             }
             _ => {}
         }
@@ -447,11 +445,10 @@ pub fn init_pin_manager(app: AppHandle) {
             mgr.live_pins = surviving;
 
             // 2. Check pending pins against foreground window
-            if let Some(fg_hwnd) = get_foreground_window() {
-                if is_pinnable(fg_hwnd, own_pid)
+            if let Some(fg_hwnd) = get_foreground_window()
+                && is_pinnable(fg_hwnd, own_pid)
                     && !mgr.live_pins.iter().any(|p| p.hwnd == fg_hwnd)
-                {
-                    if let Ok((proc_name, _)) = win::get_window_process_name_and_pid(fg_hwnd) {
+                    && let Ok((proc_name, _)) = win::get_window_process_name_and_pid(fg_hwnd) {
                         let title = win::get_window_title(fg_hwnd);
 
                         let pending_idx = mgr
@@ -490,8 +487,6 @@ pub fn init_pin_manager(app: AppHandle) {
                             }
                         }
                     }
-                }
-            }
 
             if dirty {
                 let _ = mgr.save_to_disk();

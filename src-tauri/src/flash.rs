@@ -112,12 +112,11 @@ pub fn init_overlay_window() -> Option<isize> {
             None,
         );
 
-        if let Ok(hwnd) = hwnd_res {
-            if !hwnd.0.is_null() {
+        if let Ok(hwnd) = hwnd_res
+            && !hwnd.0.is_null() {
                 OVERLAY_HWND.store(hwnd.0 as usize as u32, Ordering::SeqCst);
                 return Some(hwnd.0 as isize);
             }
-        }
     }
 
     None
@@ -239,8 +238,8 @@ unsafe fn render_outline(
             }
         }
 
-        let mut pt_src = POINT { x: 0, y: 0 };
-        let mut size = SIZE { cx: width, cy: height };
+        let pt_src = POINT { x: 0, y: 0 };
+        let size = SIZE { cx: width, cy: height };
 
         let blend = BLENDFUNCTION {
             BlendOp: AC_SRC_OVER as u8,
@@ -253,9 +252,9 @@ unsafe fn render_outline(
             overlay_hwnd,
             None,
             None,
-            Some(&mut size),
+            Some(&size),
             Some(hdc_mem),
-            Some(&mut pt_src),
+            Some(&pt_src),
             COLORREF(0),
             Some(&blend),
             ULW_ALPHA,

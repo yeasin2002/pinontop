@@ -77,13 +77,11 @@ pub fn build_tray_menu(
 
 /// Updates the tray context menu dynamically when pinned windows change.
 pub fn update_tray_menu(app: &AppHandle, pins: &[(isize, String)]) {
-    if let Ok(menu) = build_tray_menu(app, pins) {
-        if let Ok(guard) = TRAY_INSTANCE.read() {
-            if let Some(ref tray) = *guard {
+    if let Ok(menu) = build_tray_menu(app, pins)
+        && let Ok(guard) = TRAY_INSTANCE.read()
+            && let Some(ref tray) = *guard {
                 let _ = tray.set_menu(Some(menu));
             }
-        }
-    }
 }
 
 /// Sets up the initial system tray icon and attaches event handlers.
