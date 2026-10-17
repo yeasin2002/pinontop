@@ -119,7 +119,10 @@ function App() {
             <div className="p-3 rounded-lg border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/40 flex flex-col gap-2.5">
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
-                  <KeyBadge keys={["super", "ctrl", "KeyT"]} size="sm" />
+                  <KeyBadge
+                    keys={settings.shortcuts.toggle_pin.split("+")}
+                    size="sm"
+                  />
                 </div>
                 <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium text-right">
                   Pin / unpin window
@@ -128,7 +131,14 @@ function App() {
 
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
-                  <KeyBadge keys={["super", "ctrl", "Equal", "/", "Minus"]} size="sm" />
+                  <KeyBadge
+                    keys={[
+                      ...settings.shortcuts.opacity_up.split("+"),
+                      "/",
+                      settings.shortcuts.opacity_down.split("+").slice(-1)[0],
+                    ]}
+                    size="sm"
+                  />
                 </div>
                 <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium text-right">
                   Adjust opacity
@@ -137,7 +147,10 @@ function App() {
 
               <div className="flex items-center justify-between gap-2">
                 <div className="flex items-center gap-1">
-                  <KeyBadge keys={["super", "ctrl", "KeyP"]} size="sm" />
+                  <KeyBadge
+                    keys={settings.shortcuts.toggle_window.split("+")}
+                    size="sm"
+                  />
                 </div>
                 <span className="text-xs text-zinc-600 dark:text-zinc-300 font-medium text-right">
                   Show / hide pinontop

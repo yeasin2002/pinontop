@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { PinItem, Settings, WindowInfo, ToastMessage } from "../types";
 
 // Check if running inside Tauri runtime
@@ -28,12 +28,83 @@ const INITIAL_MOCK_WINDOWS: WindowInfo[] = [
   { hwnd: 106, title: "Notepad - notes.txt", process_name: "notepad.exe", is_pinned: false },
 ];
 
+// Lightweight synthesized sound effects using Web Audio API
+let audioCtx: AudioContext | null = null;
+function getAudioContext(): AudioContext | null {
+  if (typeof window === "undefined") return null;
+  const AudioContextClass = window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext;
+  if (!AudioContextClass) return null;
+  if (!audioCtx || audioCtx.state === "closed") {
+    audioCtx = new AudioContextClass();
+  }
+  if (audioCtx.state === "suspended") {
+    audioCtx.resume().catch(() => {});
+  }
+  return audioCtx;
+}
+
+function playPinSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(520, now);
+    osc.frequency.exponentialRampToValueAtTime(780, now + 0.04);
+
+    gain.gain.setValueAtTime(0.12, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.05);
+  } catch {
+    // Audio context may be restricted before user interaction
+  }
+}
+
+function playUnpinSound() {
+  try {
+    const ctx = getAudioContext();
+    if (!ctx) return;
+    const now = ctx.currentTime;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+
+    osc.type = "sine";
+    osc.frequency.setValueAtTime(620, now);
+    osc.frequency.exponentialRampToValueAtTime(420, now + 0.04);
+
+    gain.gain.setValueAtTime(0.10, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + 0.045);
+
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+
+    osc.start(now);
+    osc.stop(now + 0.045);
+  } catch {
+    // Audio context may be restricted
+  }
+}
+
 export function usePins() {
   const [pins, setPins] = useState<PinItem[]>([]);
   const [settings, setSettings] = useState<Settings>(INITIAL_SETTINGS);
   const [windows, setWindows] = useState<WindowInfo[]>(INITIAL_MOCK_WINDOWS);
   const [toast, setToast] = useState<ToastMessage | null>(null);
   const [conflicts, setConflicts] = useState<string[]>([]);
+
+  // Ref to always access latest settings inside callbacks without stale closures
+  const settingsRef = useRef(settings);
+  useEffect(() => {
+    settingsRef.current = settings;
+  }, [settings]);
 
   const showToast = useCallback(
     (message: string, type: ToastMessage["type"] = "info") => {
@@ -42,7 +113,7 @@ export function usePins() {
     []
   );
 
-  // Initialize and subscribe to Tauri events if available
+  // Initialize and subscribe to Tauri events
   useEffect(() => {
     let unlistenPins: (() => void) | undefined;
     let unlistenSettings: (() => void) | undefined;
@@ -51,7 +122,7 @@ export function usePins() {
 
     if (isTauri) {
       import("@tauri-apps/api/core").then(({ invoke }) => {
-        invoke<any>("get_state")
+        invoke<{ pins: PinItem[]; settings: Settings }>("get_state")
           .then((state) => {
             if (state) {
               if (state.pins) setPins(state.pins);
@@ -66,6 +137,13 @@ export function usePins() {
       import("@tauri-apps/api/event").then(({ listen }) => {
         listen<PinItem[]>("pins-changed", (event) => {
           setPins(event.payload);
+          // Sync open windows is_pinned status
+          setWindows((prev) =>
+            prev.map((w) => ({
+              ...w,
+              is_pinned: event.payload.some((p) => p.hwnd === w.hwnd),
+            }))
+          );
         }).then((fn) => {
           unlistenPins = fn;
         });
@@ -76,14 +154,24 @@ export function usePins() {
           unlistenSettings = fn;
         });
 
-        listen<{ message: string }>("toast", (event) => {
-          showToast(event.payload.message);
+        listen<string | { message: string }>("toast", (event) => {
+          const msg =
+            typeof event.payload === "string"
+              ? event.payload
+              : event.payload?.message;
+          if (msg) showToast(msg);
         }).then((fn) => {
           unlistenToast = fn;
         });
 
-        listen<{ conflicts: string[] }>("shortcut-conflicts", (event) => {
-          setConflicts(event.payload.conflicts || []);
+        listen<{ conflicts?: string[] } | string[]>("shortcut-conflicts", (event) => {
+          if (Array.isArray(event.payload)) {
+            setConflicts(event.payload);
+          } else if (event.payload?.conflicts) {
+            setConflicts(event.payload.conflicts);
+          } else {
+            setConflicts([]);
+          }
         }).then((fn) => {
           unlistenConflicts = fn;
         });
@@ -119,53 +207,86 @@ export function usePins() {
     }
   }, [pins]);
 
-  // Toggle Pin
+  // Toggle Pin with optimistic update, rollback on error, and sound feedback
   const togglePin = useCallback(
     async (hwnd: number) => {
+      const targetWin = windows.find((w) => w.hwnd === hwnd);
+      const isCurrentlyPinned = pins.some((p) => p.hwnd === hwnd);
+      const prevPins = [...pins];
+      const prevWindows = [...windows];
+
+      // Optimistic update
+      if (isCurrentlyPinned) {
+        setPins((prev) => prev.filter((p) => p.hwnd !== hwnd));
+        setWindows((prev) =>
+          prev.map((w) => (w.hwnd === hwnd ? { ...w, is_pinned: false } : w))
+        );
+      } else if (targetWin) {
+        const newPin: PinItem = {
+          hwnd,
+          title: targetWin.title,
+          process_name: targetWin.process_name,
+          opacity: 100,
+          click_through: false,
+        };
+        setPins((prev) => [...prev, newPin]);
+        setWindows((prev) =>
+          prev.map((w) => (w.hwnd === hwnd ? { ...w, is_pinned: true } : w))
+        );
+      }
+
       if (isTauri) {
         try {
           const { invoke } = await import("@tauri-apps/api/core");
-          await invoke("toggle_pin", { hwnd });
+          const pinned = await invoke<boolean>("toggle_pin", { hwnd });
+
+          // Play sound on success
+          if (settingsRef.current.enable_sound) {
+            if (pinned) {
+              playPinSound();
+            } else {
+              playUnpinSound();
+            }
+          }
+
+          if (targetWin) {
+            showToast(
+              pinned
+                ? `Pinned ${targetWin.process_name}`
+                : `Unpinned ${targetWin.process_name}`
+            );
+          }
         } catch (err) {
-          showToast(`Error: ${err}`, "error");
+          // Rollback on failure
+          setPins(prevPins);
+          setWindows(prevWindows);
+          showToast(`Pin failed: ${err}`, "error");
         }
       } else {
-        // Mock toggle
-        const targetWin = windows.find((w) => w.hwnd === hwnd);
-        if (!targetWin) return;
-
-        const isCurrentlyPinned = pins.some((p) => p.hwnd === hwnd);
-        if (isCurrentlyPinned) {
-          setPins((prev) => prev.filter((p) => p.hwnd !== hwnd));
-          setWindows((prev) =>
-            prev.map((w) => (w.hwnd === hwnd ? { ...w, is_pinned: false } : w))
+        // Mock feedback
+        if (settingsRef.current.enable_sound) {
+          if (isCurrentlyPinned) playUnpinSound();
+          else playPinSound();
+        }
+        if (targetWin) {
+          showToast(
+            isCurrentlyPinned
+              ? `Unpinned ${targetWin.process_name}`
+              : `Pinned ${targetWin.process_name}`
           );
-          showToast(`Unpinned ${targetWin.process_name}`);
-        } else {
-          const newPin: PinItem = {
-            hwnd,
-            title: targetWin.title,
-            process_name: targetWin.process_name,
-            opacity: 100,
-            click_through: false,
-          };
-          setPins((prev) => [...prev, newPin]);
-          setWindows((prev) =>
-            prev.map((w) => (w.hwnd === hwnd ? { ...w, is_pinned: true } : w))
-          );
-          showToast(`Pinned ${targetWin.process_name}`);
         }
       }
     },
     [windows, pins, showToast]
   );
 
-  // Set Opacity
+  // Set Opacity with optimistic update and rollback
   const setOpacity = useCallback(
     async (index: number, percent: number) => {
       const pin = pins[index];
       if (!pin) return;
 
+      const prevPins = [...pins];
       // Optimistic update
       setPins((prev) =>
         prev.map((p, i) => (i === index ? { ...p, opacity: percent } : p))
@@ -176,20 +297,22 @@ export function usePins() {
           const { invoke } = await import("@tauri-apps/api/core");
           await invoke("set_opacity", { hwnd: pin.hwnd, percent });
         } catch (err) {
-          console.error("Failed to set opacity:", err);
+          setPins(prevPins);
+          showToast(`Failed to set opacity: ${err}`, "error");
         }
       }
     },
-    [pins]
+    [pins, showToast]
   );
 
-  // Toggle Click-Through
+  // Toggle Click-Through with optimistic update and rollback
   const toggleClickThrough = useCallback(
     async (index: number) => {
       const pin = pins[index];
       if (!pin) return;
 
       const nextVal = !pin.click_through;
+      const prevPins = [...pins];
 
       // Optimistic update
       setPins((prev) =>
@@ -207,24 +330,45 @@ export function usePins() {
           const { invoke } = await import("@tauri-apps/api/core");
           await invoke("set_click_through", { hwnd: pin.hwnd, enabled: nextVal });
         } catch (err) {
-          console.error("Failed to set click through:", err);
+          setPins(prevPins);
+          showToast(`Failed to toggle click-through: ${err}`, "error");
         }
       }
     },
     [pins, showToast]
   );
 
-  // Unpin single
+  // Unpin single (live window or forget pending pin)
   const unpin = useCallback(
     async (index: number) => {
       const pin = pins[index];
       if (!pin) return;
 
       if (pin.hwnd) {
-        togglePin(pin.hwnd);
+        await togglePin(pin.hwnd);
       } else {
+        // Pending pin: remove from state and notify backend
+        const prevPins = [...pins];
         setPins((prev) => prev.filter((_, i) => i !== index));
-        showToast(`Removed ${pin.process_name}`);
+
+        if (isTauri) {
+          try {
+            const { invoke } = await import("@tauri-apps/api/core");
+            await invoke("forget_pending", { index });
+            if (settingsRef.current.enable_sound) {
+              playUnpinSound();
+            }
+            showToast(`Removed pending pin for ${pin.process_name}`);
+          } catch (err) {
+            setPins(prevPins);
+            showToast(`Error removing pending pin: ${err}`, "error");
+          }
+        } else {
+          if (settingsRef.current.enable_sound) {
+            playUnpinSound();
+          }
+          showToast(`Removed pending pin for ${pin.process_name}`);
+        }
       }
     },
     [pins, togglePin, showToast]
@@ -232,23 +376,37 @@ export function usePins() {
 
   // Unpin all
   const unpinAll = useCallback(async () => {
+    const prevPins = [...pins];
+    const prevWindows = [...windows];
+
+    setPins([]);
+    setWindows((prev) => prev.map((w) => ({ ...w, is_pinned: false })));
+
     if (isTauri) {
       try {
         const { invoke } = await import("@tauri-apps/api/core");
         await invoke("unpin_all");
+        if (settingsRef.current.enable_sound) {
+          playUnpinSound();
+        }
+        showToast("All windows unpinned");
       } catch (err) {
-        console.error("Failed to unpin all:", err);
+        setPins(prevPins);
+        setWindows(prevWindows);
+        showToast(`Failed to unpin all: ${err}`, "error");
       }
     } else {
-      setPins([]);
-      setWindows((prev) => prev.map((w) => ({ ...w, is_pinned: false })));
+      if (settingsRef.current.enable_sound) {
+        playUnpinSound();
+      }
       showToast("All windows unpinned");
     }
-  }, [showToast]);
+  }, [pins, windows, showToast]);
 
-  // Save Settings
+  // Save Settings with optimistic update and rollback
   const updateSettings = useCallback(
     async (newSettings: Partial<Settings>) => {
+      const prevSettings = { ...settings };
       const updated = { ...settings, ...newSettings };
       setSettings(updated);
 
@@ -262,29 +420,34 @@ export function usePins() {
             });
           }
         } catch (err) {
-          console.error("Failed to save settings:", err);
+          setSettings(prevSettings);
+          showToast(`Failed to save settings: ${err}`, "error");
         }
       }
     },
-    [settings]
+    [settings, showToast]
   );
 
-  // Save Shortcuts
+  // Save Shortcuts with validation and rollback
   const saveShortcuts = useCallback(
     async (newShortcuts: Settings["shortcuts"]) => {
+      const prevShortcuts = { ...settings.shortcuts };
       setSettings((prev) => ({ ...prev, shortcuts: newShortcuts }));
-      showToast("Shortcuts updated successfully");
 
       if (isTauri) {
         try {
           const { invoke } = await import("@tauri-apps/api/core");
           await invoke("save_shortcuts", { shortcuts: newShortcuts });
+          showToast("Shortcuts updated successfully");
         } catch (err) {
+          setSettings((prev) => ({ ...prev, shortcuts: prevShortcuts }));
           showToast(`Error saving shortcuts: ${err}`, "error");
         }
+      } else {
+        showToast("Shortcuts updated successfully");
       }
     },
-    [showToast]
+    [settings.shortcuts, showToast]
   );
 
   // Hover row for overlay highlight

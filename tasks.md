@@ -196,10 +196,10 @@ This document tracks all remaining tasks required to bring **pinontop** (formerl
 ## Phase 9: Frontend & Backend Integration
 
 ### 9.1 Live Hook Binding ([`src/hooks/usePins.ts`](file:///d:/programming/personal/pinontop/src/hooks/usePins.ts))
-- [ ] Switch from mock fallbacks to live Tauri `invoke()` calls.
-- [ ] Subscribe to backend events: `pins-changed`, `settings-changed`, `toast`, `shortcut-conflicts`.
-- [ ] Implement optimistic UI updates with rollback on command errors.
-- [ ] Add sound effects playback for pin/unpin events using Web Audio API or bundled WAV clicks.
+- [x] Switch from mock fallbacks to live Tauri `invoke()` calls.
+- [x] Subscribe to backend events: `pins-changed`, `settings-changed`, `toast`, `shortcut-conflicts`.
+- [x] Implement optimistic UI updates with rollback on command errors.
+- [x] Add sound effects playback for pin/unpin events using Web Audio API or bundled WAV clicks.
 
 ---
 
