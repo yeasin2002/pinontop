@@ -32,6 +32,9 @@ use windows::Win32::UI::WindowsAndMessaging::{
     WNDCLASS_STYLES, WS_OVERLAPPED,
 };
 
+#[cfg(not(windows))]
+pub const WM_APP: u32 = 0x8000;
+
 /// Custom window messages for helper window communication.
 pub const WM_APP_TRAY: u32 = WM_APP + 1; // 0x8001
 pub const WM_APP_SHOW: u32 = WM_APP + 2; // 0x8002
